@@ -13,6 +13,7 @@ import OrdenesCompra from './OrdenesCompra';
 import OrdenesPago from './OrdenesPago';
 import SolicitudCompra from './SolicitudCompra';
 import Recibos from './Recibos';
+import Facturas from './Facturas';
 
 // Componentes de Logística
 import Vehiculos from './Vehiculos';
@@ -87,6 +88,7 @@ function App() {
                 <Route path="/compras" element={<OrdenesCompra />} />
                 <Route path="/pagos" element={<OrdenesPago />} />
                 <Route path="/recibos" element={<Recibos />} />
+                <Route path="/facturas" element={<Facturas user={user} />} />
                 <Route path="/usuarios" element={<UsuariosGestion />} />
               </>
             )}

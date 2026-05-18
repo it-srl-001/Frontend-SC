@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   FileText, Truck, ShoppingCart, LogOut, Wrench, 
-  Receipt, CreditCard, Users, Shield, Menu, X 
+  Receipt, CreditCard, Users, Shield, Menu, X, ClipboardCheck
 } from 'lucide-react';
 
 const Navbar = ({ user, onLogout }) => {
@@ -114,6 +114,9 @@ const Navbar = ({ user, onLogout }) => {
               </Link>
               <Link to="/recibos" style={styles.link} onClick={closeMenu}>
                 <Receipt size={18} /> Recibos
+              </Link>
+              <Link to="/facturas" style={styles.link} onClick={closeMenu}>
+                <ClipboardCheck size={18} /> Facturas
               </Link>
               <Link to="/pagos" style={styles.link} onClick={closeMenu}>
                 <CreditCard size={18} /> Pagos
