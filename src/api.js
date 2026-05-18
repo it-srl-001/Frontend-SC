@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 1. Configuración de la URL base
-const baseURL = import.meta.env.VITE_API_URL || 'https://backend-oc-con-solicitudes.onrender.com';
+const baseURL = import.meta.env.VITE_API_URL || 'https://backend-sc-gbeq.onrender.com';
 
 const api = axios.create({
   baseURL: baseURL,
