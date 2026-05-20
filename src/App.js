@@ -85,7 +85,7 @@ function App() {
             {isAdmin && (
               <>
                 <Route path="/proveedores" element={<Proveedores />} />
-                <Route path="/compras" element={<OrdenesCompra />} />
+                <Route path="/compras" element={<OrdenesCompra user={user} />} />
                 <Route path="/pagos" element={<OrdenesPago />} />
                 <Route path="/recibos" element={<Recibos />} />
                 <Route path="/facturas" element={<Facturas user={user} />} />

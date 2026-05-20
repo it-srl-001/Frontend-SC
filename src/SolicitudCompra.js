@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from './api'; 
 import { 
   Send, Clock, CheckCircle, XCircle, FileText, Plus, 
-  Trash2, Building2, Search, DollarSign, ChevronDown, ChevronUp, Link 
+  Trash2, Building2, Search, DollarSign, ChevronDown, ChevronUp, Link, Image, X
 } from 'lucide-react';
 
 const SolicitudCompra = ({ user }) => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filtroArea, setFiltroArea] = useState(''); 
+  const [filtroEstado, setFiltroEstado] = useState('');
   const [items, setItems] = useState([{ producto: '', cantidad: 1 }]);
   
   // Estado para controlar qué fila está expandida
@@ -20,7 +21,8 @@ const SolicitudCompra = ({ user }) => {
     justificacion: '',
     urgencia: 'MEDIA',
     monto_estimado: 'Hasta 200.000',
-    link_referencia: ''
+    link_referencia: '',
+    imagen_referencia: ''
   });
 
   const departamentos = [
@@ -33,7 +35,8 @@ const SolicitudCompra = ({ user }) => {
     if (!user?.id) return;
     try {
       // Se filtran por rol y usuario_id desde el backend
-      const res = await api.get(`/api/solicitudes?rol=${user.rol}&usuario_id=${user.id}`);
+      const estadoParam = filtroEstado ? `&estado=${encodeURIComponent(filtroEstado)}` : '';
+      const res = await api.get(`/api/solicitudes?rol=${user.rol}&usuario_id=${user.id}${estadoParam}`);
       setSolicitudes(res.data || []);
     } catch (err) {
       console.error("Error cargando solicitudes:", err);
@@ -45,7 +48,7 @@ const SolicitudCompra = ({ user }) => {
         setNuevaSolicitud(prev => ({ ...prev, solicitante: user.nombre }));
         cargarSolicitudes();
     }
-  }, [user]);
+  }, [user, filtroEstado]);
 
   const solicitudesFiltradas = solicitudes.filter(s => 
     s.area?.toLowerCase().includes(filtroArea.toLowerCase())
@@ -65,6 +68,22 @@ const SolicitudCompra = ({ user }) => {
     setItems(nuevosItems);
   };
 
+  const manejarImagen = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Seleccione una imagen valida.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNuevaSolicitud((prev) => ({ ...prev, imagen_referencia: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nuevaSolicitud.area) return alert("Por favor, seleccione un Departamento / Área");
@@ -81,7 +100,7 @@ const SolicitudCompra = ({ user }) => {
       await api.post('/api/solicitudes', payload);
       alert("✅ Solicitud enviada correctamente");
       setItems([{ producto: '', cantidad: 1 }]);
-      setNuevaSolicitud({ ...nuevaSolicitud, area: '', justificacion: '', link_referencia: '' });
+      setNuevaSolicitud({ ...nuevaSolicitud, area: '', justificacion: '', link_referencia: '', imagen_referencia: '' });
       cargarSolicitudes();
     } catch (err) {
       const msg = err.response?.data?.message || "Error al procesar la solicitud";
@@ -166,6 +185,35 @@ const SolicitudCompra = ({ user }) => {
                 <label style={styles.label}>Justificación de la Compra</label>
                 <textarea style={{...styles.input, width: '100%', minHeight: '80px'}} required value={nuevaSolicitud.justificacion} onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, justificacion: e.target.value})} placeholder="Explique brevemente por qué es necesario este pedido..." />
             </div>
+
+            <div style={styles.referenceGrid}>
+              <div>
+                <label style={styles.label}>Link de referencia</label>
+                <input
+                  type="url"
+                  style={{...styles.input, width: '100%'}}
+                  placeholder="https://..."
+                  value={nuevaSolicitud.link_referencia}
+                  onChange={(e) => setNuevaSolicitud({...nuevaSolicitud, link_referencia: e.target.value})}
+                />
+              </div>
+              <div>
+                <label style={styles.label}>Imagen / Foto</label>
+                <label style={styles.fileButton}>
+                  <Image size={16} /> Adjuntar o sacar foto
+                  <input type="file" accept="image/*" capture="environment" onChange={manejarImagen} style={{display: 'none'}} />
+                </label>
+              </div>
+            </div>
+
+            {nuevaSolicitud.imagen_referencia && (
+              <div style={styles.imagePreviewWrap}>
+                <img src={nuevaSolicitud.imagen_referencia} alt="Referencia" style={styles.imagePreview} />
+                <button type="button" onClick={() => setNuevaSolicitud({...nuevaSolicitud, imagen_referencia: ''})} style={styles.btnRemoveImage}>
+                  <X size={14} /> Quitar imagen
+                </button>
+              </div>
+            )}
             
             <button type="submit" disabled={loading} style={styles.btnSubmit}>
               {loading ? "Enviando..." : "ENVIAR SOLICITUD"} <Send size={16} />
@@ -183,7 +231,8 @@ const SolicitudCompra = ({ user }) => {
           </div>
 
           {user.rol === 'admin' && (
-            <div style={styles.searchContainer}>
+            <div style={styles.filtersContainer}>
+              <div style={styles.searchContainer}>
               <Search size={18} style={styles.searchIcon} />
               <input 
                 type="text" 
@@ -192,6 +241,14 @@ const SolicitudCompra = ({ user }) => {
                 value={filtroArea}
                 onChange={(e) => setFiltroArea(e.target.value)}
               />
+              </div>
+              <select style={styles.estadoFilter} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+                <option value="">Todos los estados</option>
+                <option value="En Revisión">En revisión</option>
+                <option value="Aprobado">Aprobado</option>
+                <option value="Rechazado">Rechazado</option>
+                <option value="COMPRADO">Comprado</option>
+              </select>
             </div>
           )}
         </div>
@@ -285,6 +342,13 @@ const SolicitudCompra = ({ user }) => {
                               </a>
                             </div>
                           )}
+
+                          {s.imagen_referencia && (
+                            <div style={{marginTop: '15px'}}>
+                              <h4 style={styles.detailLabel}>Imagen / Foto:</h4>
+                              <img src={s.imagen_referencia} alt="Referencia de solicitud" style={styles.detailImage} />
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -318,8 +382,15 @@ const styles = {
   btnSubmit: { width: '100%', background: '#0f172a', color: 'white', border: 'none', padding: '14px', borderRadius: '10px', fontWeight: 'bold', display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', cursor: 'pointer' },
   tableHeaderContainer: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' },
   searchContainer: { position: 'relative', width: '100%', maxWidth: '300px' },
+  filtersContainer: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
   searchIcon: { position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' },
   searchInput: { width: '100%', padding: '10px 15px 10px 40px', borderRadius: '10px', border: '2px solid #e2e8f0', outline: 'none', fontSize: '14px', boxSizing: 'border-box' },
+  estadoFilter: { padding: '10px 12px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '14px', color: '#334155', background: 'white' },
+  referenceGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', marginTop: '15px' },
+  fileButton: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '8px', border: '1px dashed #94a3b8', background: '#f8fafc', cursor: 'pointer', fontSize: '13px', fontWeight: '700', color: '#475569' },
+  imagePreviewWrap: { display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px', flexWrap: 'wrap' },
+  imagePreview: { width: '120px', height: '90px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' },
+  btnRemoveImage: { display: 'flex', alignItems: 'center', gap: '6px', border: 'none', background: '#fee2e2', color: '#b91c1c', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', fontWeight: '700' },
   table: { width: '100%', borderCollapse: 'collapse' },
   trHead: { background: '#f8fafc', borderBottom: '2px solid #f1f5f9' },
   th: { textAlign: 'left', padding: '12px', fontSize: '11px', color: '#64748b', textTransform: 'uppercase' },
@@ -345,7 +416,8 @@ const styles = {
   detailLabel: { margin: '0 0 8px 0', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' },
   detailText: { margin: 0, fontSize: '14px', color: '#1e293b', lineHeight: '1.6' },
   itemDetailRow: { fontSize: '13px', padding: '6px 0', borderBottom: '1px solid #f8fafc', color: '#334155' },
-  linkRef: { display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#2563eb', fontSize: '13px', textDecoration: 'none', fontWeight: '600' }
+  linkRef: { display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#2563eb', fontSize: '13px', textDecoration: 'none', fontWeight: '600' },
+  detailImage: { maxWidth: '260px', width: '100%', borderRadius: '8px', border: '1px solid #e2e8f0' }
 };
 
 export default SolicitudCompra;

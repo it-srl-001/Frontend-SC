@@ -8,7 +8,7 @@ const Recibos = () => {
   const [recibos, setRecibos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ 
-    emisor: 'Alpha Química S.A.', 
+    emisor: '', 
     receptor: '', 
     concepto: '', // Corregido: antes decía 'concept'
     monto: '', 
